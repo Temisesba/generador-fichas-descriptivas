@@ -502,8 +502,13 @@
 
         table.tabla-preview { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12.5px; }
         table.tabla-preview th, table.tabla-preview td { border: 1px solid #666; padding: 8px; vertical-align: top; }
-        table.tabla-preview th { background: #d9e8f5; }
-        table.tabla-preview td.campo-nombre { background: #d9e8f5; font-weight: 700; width: 18%; }
+        table.tabla-preview th { background: #fabf8f; }
+        table.tabla-preview td.campo-nombre {
+            font-weight: 700; width: 10%;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: center;
+        }
         table.tabla-preview td.frase-linea { white-space: pre-line; }
 
         table.tabla-indicadores-preview { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -512,8 +517,16 @@
             padding: 5px 6px;
             text-align: center;
         }
-        table.tabla-indicadores-preview th { background: #e8e8e8; }
-        table.tabla-indicadores-preview td.ind-nombre { text-align: left; }
+        table.tabla-indicadores-preview th { background: #ccffcc; }
+        table.tabla-indicadores-preview td.ind-nombre { text-align: left; text-transform: uppercase; }
+        table.tabla-indicadores-preview caption {
+            background: #fabf8f;
+            font-weight: 700;
+            padding: 6px;
+            border: 1px solid #666;
+            border-bottom: none;
+            caption-side: top;
+        }
 
         .firmas-preview {
             display: flex;
@@ -728,6 +741,22 @@
         let fichas = {};
         let alumnoActual = null;
         let autoguardadoTimer = null;
+
+        let logoSecretariaBuffer = null;
+        let logoEscuelaBuffer = null;
+
+        async function cargarLogos() {
+            try {
+                const [r1, r2] = await Promise.all([
+                    fetch('logo-secretaria.png').catch(() => null),
+                    fetch('logo-escuela.png').catch(() => null)
+                ]);
+                if (r1 && r1.ok) logoSecretariaBuffer = await r1.arrayBuffer();
+                if (r2 && r2.ok) logoEscuelaBuffer = await r2.arrayBuffer();
+            } catch (err) {
+                console.warn('No se pudieron cargar los logos para el Word (el documento se genera igual, sin logos):', err);
+            }
+        }
 
         let acordeonEstado = {};
         CAMPOS.forEach((c, i) => { acordeonEstado[c] = (i === 0); });
@@ -1317,10 +1346,10 @@
                         CICLO ESCOLAR: ${escapeHtml(config.cicloEscolar || '')}
                     </div>
                     <div class="titulo-ficha">FICHA DESCRIPTIVA INDIVIDUAL</div>
-                    <div class="nombre-alumno">NOMBRE DEL ALUMNO: ${escapeHtml(alumnoActual)} &nbsp;&nbsp;|&nbsp;&nbsp; GRUPO: ${escapeHtml(config.gradoGrupo || '')}</div>
+                    <div class="nombre-alumno">NOMBRE DEL ALUMNO: <u>${escapeHtml(alumnoActual)}</u></div>
 
                     <table class="tabla-preview">
-                        <tr><th>Campo Formativo</th><th>Fortalezas</th><th>Áreas de Oportunidad</th></tr>
+                        <tr><th>Campo Formativo</th><th>Fortalezas</th><th>Areas de Oportunidad</th></tr>
                         ${CAMPOS.map(campo => `
                             <tr>
                                 <td class="campo-nombre">${campo}</td>
@@ -1330,16 +1359,16 @@
                         `).join('')}
                     </table>
 
-                    <div style="font-weight:700; margin-bottom:8px;">ASPECTOS PARA TOMAR EN CUENTA</div>
                     <table class="tabla-indicadores-preview">
+                        <caption colspan="8">ASPECTOS PARA TOMAR EN CUENTA</caption>
                         <tr><th>Indicador</th><th>S</th><th>F</th><th>N</th><th>Indicador</th><th>S</th><th>F</th><th>N</th></tr>
                         ${filasIndicadores()}
                     </table>
-                    <p style="font-size:11px; font-style:italic; margin-top:6px;">(S: SIEMPRE &nbsp; F: FRECUENTEMENTE &nbsp; N: NUNCA)</p>
+                    <p style="font-size:11px; font-weight:700; text-align:center; margin-top:6px;">(S: SIEMPRE.&nbsp;&nbsp;&nbsp;F: FRECUENTEMENTE&nbsp;&nbsp;&nbsp;N: NUNCA)</p>
 
                     <div class="firmas-preview">
-                        <div>Vo. Bo. DIRECTOR<br><br>_____________________________<br>${escapeHtml(config.director || '')}</div>
                         <div>MAESTRO RESPONSABLE<br><br>_____________________________<br>${escapeHtml(config.maestro || '')}</div>
+                        <div>Vo. Bo<br>DIRECTOR<br><br>_____________________________<br>${escapeHtml(config.director || '')}</div>
                     </div>
                 </div>
             `;
@@ -1384,12 +1413,58 @@
             }
         }
 
-        function crearDocumento(config, nombreAlumno, ficha) {
-            const indicadoresParrafos = (ind) => new docx.Paragraph({
-                text: ficha.indicadores[ind.key] === 'S' ? 'X' : '',
-                alignment: docx.AlignmentType.CENTER
-            });
+        const COLOR_NARANJA = 'FABF8F';
+        const COLOR_VERDE = 'CCFFCC';
+        const SIN_BORDE = { style: docx.BorderStyle ? docx.BorderStyle.NONE : 'none', size: 0, color: 'FFFFFF' };
+        const BORDES_INVISIBLES = { top: SIN_BORDE, bottom: SIN_BORDE, left: SIN_BORDE, right: SIN_BORDE, insideHorizontal: SIN_BORDE, insideVertical: SIN_BORDE };
 
+        function celdaEncabezadoTabla(texto, widthPct) {
+            return new docx.TableCell({
+                width: { size: widthPct, type: docx.WidthType.PERCENTAGE },
+                shading: { fill: COLOR_NARANJA },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: texto, bold: true, size: 20 })] })]
+            });
+        }
+
+        function celdaIndicadorHeader(texto, widthPct) {
+            return new docx.TableCell({
+                width: { size: widthPct, type: docx.WidthType.PERCENTAGE },
+                shading: { fill: COLOR_VERDE },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: texto, font: 'Aptos', size: 28 })] })]
+            });
+        }
+
+        function celdaIndicadorLabel(texto) {
+            return new docx.TableCell({
+                width: { size: 20, type: docx.WidthType.PERCENTAGE },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [new docx.Paragraph({ children: [new docx.TextRun({ text: (texto || '').toUpperCase(), font: 'Aptos', size: 24 })] })]
+            });
+        }
+
+        function celdaIndicadorMarca(activo) {
+            return new docx.TableCell({
+                width: { size: 10, type: docx.WidthType.PERCENTAGE },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: activo ? 'X' : '', bold: true, font: 'Aptos', size: 24 })] })]
+            });
+        }
+
+        function celdaLogo(buffer, width, height) {
+            return new docx.TableCell({
+                width: { size: 15, type: docx.WidthType.PERCENTAGE },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [
+                    buffer
+                        ? new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.ImageRun({ data: buffer, type: 'png', transformation: { width, height } })] })
+                        : new docx.Paragraph({ text: '' })
+                ]
+            });
+        }
+
+        function crearDocumento(config, nombreAlumno, ficha) {
             const filasIndicadores = [];
             const mitad = Math.ceil(INDICADORES.length / 2);
             for (let i = 0; i < mitad; i++) {
@@ -1397,87 +1472,143 @@
                 const b = INDICADORES[mitad + i];
                 filasIndicadores.push(new docx.TableRow({
                     children: [
-                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: a ? a.label : '', size: 18 })] }),
-                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: a && ficha.indicadores[a.key] === l ? 'X' : '', alignment: docx.AlignmentType.CENTER, bold: true, size: 18 })] })),
-                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: b ? b.label : '', size: 18 })] }),
-                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: b && ficha.indicadores[b.key] === l ? 'X' : '', alignment: docx.AlignmentType.CENTER, bold: true, size: 18 })] }))
+                        celdaIndicadorLabel(a ? a.label : ''),
+                        ...['S', 'F', 'N'].map(l => celdaIndicadorMarca(!!(a && ficha.indicadores[a.key] === l))),
+                        celdaIndicadorLabel(b ? b.label : ''),
+                        ...['S', 'F', 'N'].map(l => celdaIndicadorMarca(!!(b && ficha.indicadores[b.key] === l)))
                     ]
                 }));
             }
 
+            const lineaEncabezado = (texto) => new docx.Paragraph({
+                alignment: docx.AlignmentType.CENTER,
+                children: [new docx.TextRun({ text: texto, font: 'Bahnschrift SemiCondensed', size: 22 })]
+            });
+
             return new docx.Document({
                 sections: [{
                     children: [
-                        new docx.Paragraph({ text: config.nombreEscuela || '', alignment: docx.AlignmentType.CENTER, bold: true, size: 24 }),
-                        new docx.Paragraph({ text: config.claveEscuela || '', alignment: docx.AlignmentType.CENTER, size: 20 }),
-                        new docx.Paragraph({ text: config.zonaEscolar || '', alignment: docx.AlignmentType.CENTER, size: 20 }),
-                        new docx.Paragraph({ text: config.direccion || '', alignment: docx.AlignmentType.CENTER, size: 20 }),
-                        new docx.Paragraph({ text: 'CICLO ESCOLAR: ' + (config.cicloEscolar || ''), alignment: docx.AlignmentType.CENTER, size: 20, spacing: { after: 300 } }),
-                        new docx.Paragraph({ text: 'FICHA DESCRIPTIVA INDIVIDUAL', alignment: docx.AlignmentType.CENTER, bold: true, size: 26, spacing: { after: 300 } }),
-                        new docx.Paragraph({ text: `NOMBRE DEL ALUMNO: ${nombreAlumno}`, bold: true, size: 24 }),
-                        new docx.Paragraph({ text: `GRUPO: ${config.gradoGrupo || ''}`, bold: true, size: 20, spacing: { after: 300 } }),
-
                         new docx.Table({
                             width: { size: 100, type: docx.WidthType.PERCENTAGE },
-                            rows: CAMPOS.map(campo => new docx.TableRow({
+                            borders: BORDES_INVISIBLES,
+                            rows: [new docx.TableRow({
                                 children: [
+                                    celdaLogo(logoSecretariaBuffer, 90, 32),
                                     new docx.TableCell({
-                                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
-                                        children: [new docx.Paragraph({ text: campo, bold: true, size: 20 })],
-                                        shading: { fill: 'D9E8F5' }
+                                        width: { size: 70, type: docx.WidthType.PERCENTAGE },
+                                        verticalAlign: docx.VerticalAlign.CENTER,
+                                        children: [
+                                            lineaEncabezado(config.nombreEscuela || ''),
+                                            lineaEncabezado('C.C.T. ' + (config.claveEscuela || '')),
+                                            lineaEncabezado(config.zonaEscolar || ''),
+                                            lineaEncabezado(config.direccion || ''),
+                                            lineaEncabezado('CICLO ESCOLAR: ' + (config.cicloEscolar || ''))
+                                        ]
                                     }),
-                                    new docx.TableCell({
-                                        width: { size: 39, type: docx.WidthType.PERCENTAGE },
-                                        children: (ficha.campos[campo].fortalezas.length ? ficha.campos[campo].fortalezas : ['']).map(txt =>
-                                            new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
-                                        )
-                                    }),
-                                    new docx.TableCell({
-                                        width: { size: 39, type: docx.WidthType.PERCENTAGE },
-                                        children: (ficha.campos[campo].oportunidades.length ? ficha.campos[campo].oportunidades : ['']).map(txt =>
-                                            new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
-                                        )
-                                    })
+                                    celdaLogo(logoEscuelaBuffer, 55, 50)
                                 ]
-                            }))
+                            })]
                         }),
 
-                        new docx.Paragraph({ text: '' }),
-                        new docx.Paragraph({ text: 'ASPECTOS PARA TOMAR EN CUENTA', bold: true, size: 24, spacing: { after: 200 } }),
+                        new docx.Paragraph({
+                            alignment: docx.AlignmentType.CENTER,
+                            spacing: { before: 300, after: 200 },
+                            children: [new docx.TextRun({ text: 'FICHA DESCRIPTIVA INDIVIDUAL', bold: true, font: 'Aptos Display', size: 28 })]
+                        }),
+                        new docx.Paragraph({
+                            spacing: { after: 300 },
+                            children: [
+                                new docx.TextRun({ text: 'NOMBRE DEL ALUMNO: ', bold: true, font: 'Aptos Display', size: 28 }),
+                                new docx.TextRun({ text: nombreAlumno, bold: true, font: 'Aptos Display', size: 28, underline: {} })
+                            ]
+                        }),
 
                         new docx.Table({
                             width: { size: 100, type: docx.WidthType.PERCENTAGE },
                             rows: [
                                 new docx.TableRow({
                                     children: [
-                                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: 'INDICADOR', bold: true, size: 18 })], shading: { fill: 'E8E8E8' } }),
-                                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: l, bold: true, alignment: docx.AlignmentType.CENTER, size: 18 })], shading: { fill: 'E8E8E8' } })),
-                                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: 'INDICADOR', bold: true, size: 18 })], shading: { fill: 'E8E8E8' } }),
-                                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: l, bold: true, alignment: docx.AlignmentType.CENTER, size: 18 })], shading: { fill: 'E8E8E8' } }))
+                                        celdaEncabezadoTabla('CAMPO FORMATIVO', 22),
+                                        celdaEncabezadoTabla('FORTALEZAS', 39),
+                                        celdaEncabezadoTabla('AREAS DE OPORTUNIDAD', 39)
+                                    ]
+                                }),
+                                ...CAMPOS.map(campo => new docx.TableRow({
+                                    children: [
+                                        new docx.TableCell({
+                                            width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                                            verticalAlign: docx.VerticalAlign.CENTER,
+                                            textDirection: docx.TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
+                                            children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: campo, bold: true, size: 20 })] })]
+                                        }),
+                                        new docx.TableCell({
+                                            width: { size: 39, type: docx.WidthType.PERCENTAGE },
+                                            children: (ficha.campos[campo].fortalezas.length ? ficha.campos[campo].fortalezas : ['']).map(txt =>
+                                                new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
+                                            )
+                                        }),
+                                        new docx.TableCell({
+                                            width: { size: 39, type: docx.WidthType.PERCENTAGE },
+                                            children: (ficha.campos[campo].oportunidades.length ? ficha.campos[campo].oportunidades : ['']).map(txt =>
+                                                new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
+                                            )
+                                        })
+                                    ]
+                                }))
+                            ]
+                        }),
+
+                        new docx.Paragraph({ text: '' }),
+
+                        new docx.Table({
+                            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+                            rows: [
+                                new docx.TableRow({
+                                    children: [new docx.TableCell({
+                                        columnSpan: 8,
+                                        shading: { fill: COLOR_NARANJA },
+                                        children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'ASPECTOS PARA TOMAR EN CUENTA', font: 'Aptos', size: 28 })] })]
+                                    })]
+                                }),
+                                new docx.TableRow({
+                                    children: [
+                                        celdaIndicadorHeader('INDICADOR', 20),
+                                        celdaIndicadorHeader('S', 10),
+                                        celdaIndicadorHeader('F', 10),
+                                        celdaIndicadorHeader('N', 10),
+                                        celdaIndicadorHeader('INDICADOR', 20),
+                                        celdaIndicadorHeader('S', 10),
+                                        celdaIndicadorHeader('F', 10),
+                                        celdaIndicadorHeader('N', 10)
                                     ]
                                 }),
                                 ...filasIndicadores
                             ]
                         }),
 
-                        new docx.Paragraph({ text: '(S: SIEMPRE   F: FRECUENTEMENTE   N: NUNCA)', italic: true, size: 18, spacing: { before: 200, after: 500 } }),
+                        new docx.Paragraph({
+                            alignment: docx.AlignmentType.CENTER,
+                            spacing: { before: 200, after: 500 },
+                            children: [new docx.TextRun({ text: '(S: SIEMPRE.     F: FRECUENTEMENTE     N: NUNCA)', bold: true, font: 'Arial Rounded MT Bold', size: 20 })]
+                        }),
 
                         new docx.Table({
                             width: { size: 100, type: docx.WidthType.PERCENTAGE },
-                            borders: { top: { style: 'none' }, bottom: { style: 'none' }, left: { style: 'none' }, right: { style: 'none' }, insideHorizontal: { style: 'none' }, insideVertical: { style: 'none' } },
+                            borders: BORDES_INVISIBLES,
                             rows: [new docx.TableRow({
                                 children: [
                                     new docx.TableCell({ width: { size: 50, type: docx.WidthType.PERCENTAGE }, children: [
-                                        new docx.Paragraph({ text: 'Vo. Bo   DIRECTOR', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'MAESTRO RESPONSABLE', font: 'Berlin Sans FB', size: 24 })] }),
                                         new docx.Paragraph({ text: '' }),
-                                        new docx.Paragraph({ text: '_____________________________', alignment: docx.AlignmentType.CENTER, size: 20 }),
-                                        new docx.Paragraph({ text: config.director || '', alignment: docx.AlignmentType.CENTER, size: 18 })
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: '_____________________________', size: 20 })] }),
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: config.maestro || '', size: 18 })] })
                                     ] }),
                                     new docx.TableCell({ width: { size: 50, type: docx.WidthType.PERCENTAGE }, children: [
-                                        new docx.Paragraph({ text: 'MAESTRO RESPONSABLE', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'Vo. Bo', font: 'Berlin Sans FB', size: 24 })] }),
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'DIRECTOR', font: 'Berlin Sans FB', size: 24 })] }),
                                         new docx.Paragraph({ text: '' }),
-                                        new docx.Paragraph({ text: '_____________________________', alignment: docx.AlignmentType.CENTER, size: 20 }),
-                                        new docx.Paragraph({ text: config.maestro || '', alignment: docx.AlignmentType.CENTER, size: 18 })
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: '_____________________________', size: 20 })] }),
+                                        new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: config.director || '', size: 18 })] })
                                     ] })
                                 ]
                             })]
@@ -1568,6 +1699,7 @@
                 renderizarTodo();
             }
             cargarDatos();
+            cargarLogos();
         };
     </script>
 </body>
