@@ -607,6 +607,7 @@
                 <button class="btn btn-exito" id="btnGuardarFicha" onclick="guardarFichaActual()" disabled>💾 Guardar Ahora</button>
                 <button class="btn btn-morado" id="btnPrevisualizar" onclick="previsualizarFicha()" disabled>👁️ Previsualizar Ficha</button>
                 <button class="btn btn-primario" id="btnDescargarUno" onclick="descargarWordActual()" disabled>📥 Descargar Word</button>
+                <button class="btn btn-secundario" id="btnLimpiarFicha" onclick="limpiarFichaActual()" disabled>🧹 Limpiar</button>
             </div>
         </div>
 
@@ -1042,6 +1043,7 @@
             document.getElementById('btnGuardarFicha').disabled = true;
             document.getElementById('btnPrevisualizar').disabled = true;
             document.getElementById('btnDescargarUno').disabled = true;
+            document.getElementById('btnLimpiarFicha').disabled = true;
         }
 
         function renderizarFichas() {
@@ -1133,6 +1135,7 @@
             document.getElementById('btnGuardarFicha').disabled = false;
             document.getElementById('btnPrevisualizar').disabled = false;
             document.getElementById('btnDescargarUno').disabled = !completa;
+            document.getElementById('btnLimpiarFicha').disabled = false;
             actualizarBotonDescargarTodos();
         }
 
@@ -1233,6 +1236,18 @@
             await postAction('guardarFicha', { alumno: alumnoActual, campos: fichas[alumnoActual].campos, indicadores: fichas[alumnoActual].indicadores });
             renderizarTrabajadas();
             alert('✓ Ficha de ' + alumnoActual + ' guardada en Sheets');
+        }
+
+        async function limpiarFichaActual() {
+            if (!alumnoActual) return;
+            if (!confirm(`¿Borrar TODO lo capturado para ${alumnoActual} (fortalezas, áreas de oportunidad e indicadores)?\n\nEsto no se puede deshacer.`)) return;
+
+            clearTimeout(autoguardadoTimer);
+            fichas[alumnoActual] = vacioFicha();
+            await postAction('guardarFicha', { alumno: alumnoActual, campos: fichas[alumnoActual].campos, indicadores: fichas[alumnoActual].indicadores });
+            renderizarFichas();
+            renderizarTrabajadas();
+            alert('🧹 Ficha de ' + alumnoActual + ' limpiada');
         }
 
         function actualizarBotonDescargarTodos() {
