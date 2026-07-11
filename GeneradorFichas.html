@@ -1501,6 +1501,11 @@
 
             return new docx.Document({
                 sections: [{
+                    properties: {
+                        page: {
+                            margin: { top: 720, right: 720, bottom: 720, left: 720 }
+                        }
+                    },
                     children: [
                         new docx.Table({
                             width: { size: 100, type: docx.WidthType.PERCENTAGE },
@@ -1553,7 +1558,7 @@
                                             width: { size: 22, type: docx.WidthType.PERCENTAGE },
                                             verticalAlign: docx.VerticalAlign.CENTER,
                                             textDirection: docx.TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                            children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: campo, bold: true, font: 'Aptos', size: 24 })] })]
+                                            children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: campo, font: 'Aptos', size: 24 })] })]
                                         }),
                                         new docx.TableCell({
                                             width: { size: 39, type: docx.WidthType.PERCENTAGE },
@@ -1603,7 +1608,7 @@
 
                         new docx.Paragraph({
                             alignment: docx.AlignmentType.CENTER,
-                            spacing: { before: 200, after: 500 },
+                            spacing: { before: 0, after: 500 },
                             children: [new docx.TextRun({ text: '(S: SIEMPRE.     F: FRECUENTEMENTE     N: NUNCA)', bold: true, font: 'Arial Rounded MT Bold', size: 20 })]
                         }),
 
@@ -1614,6 +1619,7 @@
                                 children: [
                                     new docx.TableCell({ width: { size: 50, type: docx.WidthType.PERCENTAGE }, children: [
                                         new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'MAESTRO RESPONSABLE', font: 'Berlin Sans FB', size: 24 })] }),
+                                        new docx.Paragraph({ text: '' }),
                                         new docx.Paragraph({ text: '' }),
                                         new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: '_____________________________', size: 20 })] }),
                                         new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: config.maestro || '', size: 18 })] })
