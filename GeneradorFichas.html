@@ -1418,27 +1418,41 @@
         const SIN_BORDE = { style: docx.BorderStyle ? docx.BorderStyle.NONE : 'none', size: 0, color: 'FFFFFF' };
         const BORDES_INVISIBLES = { top: SIN_BORDE, bottom: SIN_BORDE, left: SIN_BORDE, right: SIN_BORDE, insideHorizontal: SIN_BORDE, insideVertical: SIN_BORDE };
 
+        // 1 pulgada = 1440 dxa. Columnas S/F/N = 0.38"; columnas INDICADOR se reparten el resto de 6.5".
+        const DXA_SFN = Math.round(0.38 * 1440);
+        const DXA_INDICADOR = Math.round((6.5 * 1440 - DXA_SFN * 6) / 2);
+        const DXA_TABLA_INDICADORES = DXA_INDICADOR * 2 + DXA_SFN * 6;
+
         function celdaEncabezadoTabla(texto, widthPct) {
             return new docx.TableCell({
                 width: { size: widthPct, type: docx.WidthType.PERCENTAGE },
                 shading: { fill: COLOR_NARANJA },
                 verticalAlign: docx.VerticalAlign.CENTER,
-                children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: texto, bold: true, size: 20 })] })]
+                children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: texto, bold: true, font: 'Aptos', size: 24 })] })]
             });
         }
 
-        function celdaIndicadorHeader(texto, widthPct) {
+        function celdaIndicadorHeader(texto) {
             return new docx.TableCell({
-                width: { size: widthPct, type: docx.WidthType.PERCENTAGE },
+                width: { size: DXA_SFN, type: docx.WidthType.DXA },
                 shading: { fill: COLOR_VERDE },
                 verticalAlign: docx.VerticalAlign.CENTER,
                 children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: texto, font: 'Aptos', size: 28 })] })]
             });
         }
 
+        function celdaIndicadorHeaderIndicador() {
+            return new docx.TableCell({
+                width: { size: DXA_INDICADOR, type: docx.WidthType.DXA },
+                shading: { fill: COLOR_VERDE },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'INDICADOR', font: 'Aptos', size: 28 })] })]
+            });
+        }
+
         function celdaIndicadorLabel(texto) {
             return new docx.TableCell({
-                width: { size: 20, type: docx.WidthType.PERCENTAGE },
+                width: { size: DXA_INDICADOR, type: docx.WidthType.DXA },
                 verticalAlign: docx.VerticalAlign.CENTER,
                 children: [new docx.Paragraph({ children: [new docx.TextRun({ text: (texto || '').toUpperCase(), font: 'Aptos', size: 24 })] })]
             });
@@ -1446,7 +1460,7 @@
 
         function celdaIndicadorMarca(activo) {
             return new docx.TableCell({
-                width: { size: 10, type: docx.WidthType.PERCENTAGE },
+                width: { size: DXA_SFN, type: docx.WidthType.DXA },
                 verticalAlign: docx.VerticalAlign.CENTER,
                 children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: activo ? 'X' : '', bold: true, font: 'Aptos', size: 24 })] })]
             });
@@ -1493,7 +1507,7 @@
                             borders: BORDES_INVISIBLES,
                             rows: [new docx.TableRow({
                                 children: [
-                                    celdaLogo(logoSecretariaBuffer, 90, 32),
+                                    celdaLogo(logoSecretariaBuffer, 157, 55),
                                     new docx.TableCell({
                                         width: { size: 70, type: docx.WidthType.PERCENTAGE },
                                         verticalAlign: docx.VerticalAlign.CENTER,
@@ -1505,7 +1519,7 @@
                                             lineaEncabezado('CICLO ESCOLAR: ' + (config.cicloEscolar || ''))
                                         ]
                                     }),
-                                    celdaLogo(logoEscuelaBuffer, 55, 50)
+                                    celdaLogo(logoEscuelaBuffer, 90, 82)
                                 ]
                             })]
                         }),
@@ -1539,18 +1553,18 @@
                                             width: { size: 22, type: docx.WidthType.PERCENTAGE },
                                             verticalAlign: docx.VerticalAlign.CENTER,
                                             textDirection: docx.TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
-                                            children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: campo, bold: true, size: 20 })] })]
+                                            children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: campo, bold: true, font: 'Aptos', size: 24 })] })]
                                         }),
                                         new docx.TableCell({
                                             width: { size: 39, type: docx.WidthType.PERCENTAGE },
                                             children: (ficha.campos[campo].fortalezas.length ? ficha.campos[campo].fortalezas : ['']).map(txt =>
-                                                new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
+                                                new docx.Paragraph({ children: [new docx.TextRun({ text: txt, font: 'Aptos', size: 24 })], spacing: { after: 60 } })
                                             )
                                         }),
                                         new docx.TableCell({
                                             width: { size: 39, type: docx.WidthType.PERCENTAGE },
                                             children: (ficha.campos[campo].oportunidades.length ? ficha.campos[campo].oportunidades : ['']).map(txt =>
-                                                new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
+                                                new docx.Paragraph({ children: [new docx.TextRun({ text: txt, font: 'Aptos', size: 24 })], spacing: { after: 60 } })
                                             )
                                         })
                                     ]
@@ -1561,25 +1575,26 @@
                         new docx.Paragraph({ text: '' }),
 
                         new docx.Table({
-                            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+                            width: { size: DXA_TABLA_INDICADORES, type: docx.WidthType.DXA },
                             rows: [
                                 new docx.TableRow({
                                     children: [new docx.TableCell({
                                         columnSpan: 8,
+                                        width: { size: DXA_TABLA_INDICADORES, type: docx.WidthType.DXA },
                                         shading: { fill: COLOR_NARANJA },
                                         children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: 'ASPECTOS PARA TOMAR EN CUENTA', font: 'Aptos', size: 28 })] })]
                                     })]
                                 }),
                                 new docx.TableRow({
                                     children: [
-                                        celdaIndicadorHeader('INDICADOR', 20),
-                                        celdaIndicadorHeader('S', 10),
-                                        celdaIndicadorHeader('F', 10),
-                                        celdaIndicadorHeader('N', 10),
-                                        celdaIndicadorHeader('INDICADOR', 20),
-                                        celdaIndicadorHeader('S', 10),
-                                        celdaIndicadorHeader('F', 10),
-                                        celdaIndicadorHeader('N', 10)
+                                        celdaIndicadorHeaderIndicador(),
+                                        celdaIndicadorHeader('S'),
+                                        celdaIndicadorHeader('F'),
+                                        celdaIndicadorHeader('N'),
+                                        celdaIndicadorHeaderIndicador(),
+                                        celdaIndicadorHeader('S'),
+                                        celdaIndicadorHeader('F'),
+                                        celdaIndicadorHeader('N')
                                     ]
                                 }),
                                 ...filasIndicadores
