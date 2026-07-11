@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Fichas Descriptivas - Escuela Francisco Villa</title>
+    <script src="https://cdn.jsdelivr.net/npm/docx@9.7.1/dist/index.iife.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: white;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover { background: #f0f0f0; }
+
+        .tab-btn.active {
+            border-bottom-color: #377add;
+            color: #377add;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active { display: block; }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header h1 { font-size: 22px; margin-bottom: 4px; }
+        .header p { color: #666; font-size: 13px; }
+
+        .sync-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .sync-badge.ok { background: #d4edda; color: #155724; }
+        .sync-badge.bad { background: #f8d7da; color: #721c24; }
+        .sync-badge.loading { background: #fff3cd; color: #856404; }
+
+        .sync-badge button {
+            border: none;
+            background: rgba(0,0,0,0.08);
+            border-radius: 4px;
+            padding: 3px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .escuela-info {
+            padding: 15px;
+            background: #f0f7ff;
+            border-radius: 6px;
+            border: 1px solid #b3d9ff;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .escuela-info div { display: flex; flex-direction: column; gap: 4px; }
+        .escuela-info label { font-weight: 500; }
+        .escuela-info input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .alumnos-grid { display: grid; gap: 10px; margin-bottom: 20px; }
+
+        .alumno-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .alumno-item input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .alumno-item button {
+            padding: 8px 12px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .alumno-item button:hover { background: #c0392b; }
+
+        .btn-grupo { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primario { background: #377add; color: white; }
+        .btn-primario:hover:not(:disabled) { background: #2559c0; }
+        .btn-exito { background: #27ae60; color: white; }
+        .btn-exito:hover:not(:disabled) { background: #229954; }
+        .btn-secundario { background: #95a5a6; color: white; }
+        .btn-secundario:hover:not(:disabled) { background: #7f8c8d; }
+        .btn-morado { background: #8e44ad; color: white; }
+        .btn-morado:hover:not(:disabled) { background: #732d91; }
+        .btn-chico { padding: 6px 10px; font-size: 12px; }
+
+        /* CATÁLOGO DE FRASES */
+        .frases-container { display: grid; gap: 20px; }
+
+        .categoria-frases {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .categoria-frases h3 { margin-bottom: 15px; font-size: 16px; color: #333; }
+
+        .subcategoria { margin-bottom: 15px; }
+
+        .subcategoria h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .frases-lista { display: grid; gap: 8px; }
+
+        .frase-item { display: flex; gap: 8px; align-items: flex-start; }
+
+        .frase-item textarea {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 44px;
+        }
+
+        .frase-item .frase-botones { display: flex; flex-direction: column; gap: 4px; }
+
+        .frase-item button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+            color: white;
+        }
+
+        .frase-item .btn-guardar-frase { background: #27ae60; }
+        .frase-item .btn-borrar-frase { background: #e74c3c; }
+
+        /* FICHAS */
+        .fichas-container { display: grid; gap: 15px; }
+
+        .selector-alumno {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .selector-alumno select {
+            flex: 1;
+            min-width: 220px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .progreso {
+            padding: 12px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            color: #155724;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .campos-fichas { display: grid; gap: 20px; }
+
+        .campo-ficha {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .campo-titulo {
+            background: #e8e8e8;
+            padding: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .campo-titulo:hover { background: #ddd; }
+
+        .campo-contenido { padding: 15px; display: none; }
+        .campo-contenido.activo { display: block; }
+
+        .dos-columnas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .columna-frase h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .columna-frase.fortalezas h4 { color: #1e7e34; }
+        .columna-frase.oportunidad h4 { color: #b8860b; }
+
+        .frases-elegidas {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .frase-elegida {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: flex-start;
+            background: #e3f2fd;
+            border-left: 4px solid #377add;
+            padding: 8px 10px;
+            border-radius: 2px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .columna-frase.oportunidad .frase-elegida {
+            background: #fff8e1;
+            border-left-color: #d4a017;
+        }
+
+        .frase-elegida button {
+            border: none;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .frase-elegida button:hover { color: #e74c3c; }
+
+        .opciones-frases {
+            display: grid;
+            gap: 6px;
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .opcion-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .opcion-check:hover { background: #f0f0f0; }
+        .opcion-check input { margin-top: 3px; }
+        .opcion-check.tipo-proceso { border-left: 3px solid #d4a017; }
+        .opcion-check.tipo-acompanamiento { border-left: 3px solid #c0392b; }
+
+        .frase-libre {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .frase-libre input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* INDICADORES */
+        .indicadores-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .indicador-fila {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .indicador-fila span { font-size: 13px; }
+
+        .sfn-grupo { display: flex; gap: 4px; }
+
+        .sfn-btn {
+            width: 30px;
+            height: 28px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .sfn-btn.activo-S { background: #27ae60; color: white; border-color: #27ae60; }
+        .sfn-btn.activo-F { background: #f39c12; color: white; border-color: #f39c12; }
+        .sfn-btn.activo-N { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #17a2b8;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #0c5460;
+        }
+
+        .contador { font-size: 12px; color: #999; margin-top: 10px; }
+
+        /* TRABAJADAS */
+        table.tabla-trabajadas {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        table.tabla-trabajadas th, table.tabla-trabajadas td {
+            border: 1px solid #eee;
+            padding: 8px 10px;
+            text-align: center;
+        }
+
+        table.tabla-trabajadas th { background: #f0f0f0; }
+        table.tabla-trabajadas td.nombre { text-align: left; font-weight: 500; }
+
+        .estado-punto { font-size: 16px; }
+        .estado-completo { color: #27ae60; }
+        .estado-parcial { color: #f39c12; }
+        .estado-vacio { color: #ccc; }
+
+        .stats-fila {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .stat-card .num { font-size: 24px; font-weight: 700; color: #377add; }
+        .stat-card .lbl { font-size: 12px; color: #666; margin-top: 4px; }
+
+        /* MODAL PREVIEW */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1000;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 30px 15px;
+        }
+
+        .modal-overlay.activo { display: flex; }
+
+        .modal-caja {
+            background: white;
+            max-width: 850px;
+            width: 100%;
+            border-radius: 8px;
+            padding: 30px;
+        }
+
+        .modal-cerrar-barra {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .ficha-preview { border: 1px solid #999; padding: 20px; }
+        .ficha-preview .enc-escuela { text-align: center; font-weight: 700; font-size: 14px; line-height: 1.5; margin-bottom: 10px; }
+        .ficha-preview .titulo-ficha { text-align: center; font-weight: 700; font-size: 18px; margin: 15px 0; }
+        .ficha-preview .nombre-alumno { font-weight: 700; margin-bottom: 15px; }
+
+        table.tabla-preview { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12.5px; }
+        table.tabla-preview th, table.tabla-preview td { border: 1px solid #666; padding: 8px; vertical-align: top; }
+        table.tabla-preview th { background: #d9e8f5; }
+        table.tabla-preview td.campo-nombre { background: #d9e8f5; font-weight: 700; width: 18%; }
+        table.tabla-preview td.frase-linea { white-space: pre-line; }
+
+        table.tabla-indicadores-preview { width: 100%; border-collapse: collapse; font-size: 12px; }
+        table.tabla-indicadores-preview th, table.tabla-indicadores-preview td {
+            border: 1px solid #666;
+            padding: 5px 6px;
+            text-align: center;
+        }
+        table.tabla-indicadores-preview th { background: #e8e8e8; }
+        table.tabla-indicadores-preview td.ind-nombre { text-align: left; }
+
+        .firmas-preview {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; top: 0; left: 0; width: 100%; }
+            .modal-cerrar-barra { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .tab-btn { padding: 8px 12px; font-size: 12px; }
+            .selector-alumno { flex-direction: column; align-items: stretch; }
+            .campo-contenido { padding: 10px; }
+            .dos-columnas { grid-template-columns: 1fr; }
+            .indicadores-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📋 Generador de Fichas Descriptivas</h1>
+                <p id="headerSubtitulo">Escuela Francisco Villa</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-primario btn-chico" onclick="abrirBaseDeDatos()">🔗 Ver Base de Datos</button>
+                <div class="sync-badge loading" id="syncBadge">
+                    <span id="syncTexto">Conectando con Sheets…</span>
+                    <button onclick="cargarDatos()">🔄 Sincronizar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="cambiarTab('fichas')">📝 Fichas</button>
+            <button class="tab-btn" onclick="cambiarTab('trabajadas')">✅ Trabajadas</button>
+            <button class="tab-btn" onclick="cambiarTab('config')">⚙️ Configuración</button>
+            <button class="tab-btn" onclick="cambiarTab('frases')">📚 Catálogo de Frases</button>
+        </div>
+
+        <!-- TAB: FICHAS -->
+        <div id="fichas" class="tab-content active">
+            <h2 style="margin-bottom: 15px;">Completar Fichas Descriptivas</h2>
+
+            <div class="info-box">
+                🎯 Selecciona un alumno. Puedes marcar varias frases por lado (izquierda = Fortalezas, derecha = Áreas de Oportunidad); todas se guardan en la misma celda. Cada cambio se guarda solo en Google Sheets unos segundos después (mira el indicador arriba a la derecha); "Guardar Ficha" lo fuerza al instante.
+            </div>
+
+            <div class="selector-alumno">
+                <select id="selectorAlumno" onchange="cambiarAlumnoActual()">
+                    <option value="">-- Selecciona alumno --</option>
+                </select>
+                <span id="indicadorProgreso" style="font-size: 12px; color: #999;"></span>
+            </div>
+
+            <div id="mensajeProgreso" class="progreso" style="display: none;"></div>
+
+            <div class="campos-fichas" id="camposFichas"></div>
+
+            <div id="bloqueIndicadores" style="margin-top: 20px;"></div>
+
+            <div class="btn-grupo" style="margin-top: 30px;">
+                <button class="btn btn-exito" id="btnGuardarFicha" onclick="guardarFichaActual()" disabled>💾 Guardar Ahora</button>
+                <button class="btn btn-morado" id="btnPrevisualizar" onclick="previsualizarFicha()" disabled>👁️ Previsualizar Ficha</button>
+                <button class="btn btn-primario" id="btnDescargarUno" onclick="descargarWordActual()" disabled>📥 Descargar Word</button>
+            </div>
+        </div>
+
+        <!-- TAB: TRABAJADAS -->
+        <div id="trabajadas" class="tab-content">
+            <h2 style="margin-bottom: 15px;">Fichas Trabajadas</h2>
+
+            <div class="stats-fila" id="statsFila"></div>
+
+            <div class="btn-grupo">
+                <button class="btn btn-exito" id="btnDescargarTodos" onclick="descargarTodosPalabra()" disabled>📥 Descargar Todas las Completas</button>
+                <button class="btn btn-secundario" onclick="cargarDatos()">🔄 Actualizar desde Sheets</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="tabla-trabajadas" id="tablaTrabajadas"></table>
+            </div>
+        </div>
+
+        <!-- TAB: CONFIGURACIÓN -->
+        <div id="config" class="tab-content">
+            <h2 style="margin-bottom: 15px;">Configuración de Escuela, Alumnos y Base de Datos</h2>
+
+            <div class="info-box">
+                💾 Todo esto se guarda en tu Google Sheet. También puedes editar el Sheet directamente (agregar/borrar alumnos o frases ahí) y luego presionar "Sincronizar".
+            </div>
+
+            <div class="btn-grupo">
+                <button class="btn btn-primario" onclick="abrirBaseDeDatos()">🔗 Ver Base de Datos (Google Sheets)</button>
+                <button class="btn btn-secundario" onclick="cargarDatos()">🔄 Sincronizar Ahora</button>
+            </div>
+
+            <h3 style="margin: 20px 0 10px;">Datos de la Escuela</h3>
+            <div class="escuela-info" id="escuelaInfoGrid"></div>
+            <div class="btn-grupo">
+                <button class="btn btn-exito" onclick="guardarConfigEscuela()">✓ Guardar Datos de Escuela</button>
+            </div>
+
+            <h3 style="margin: 20px 0 15px;">URL de Apps Script (backend)</h3>
+            <div class="escuela-info" style="grid-template-columns: 1fr;">
+                <div>
+                    <label>URL que termina en /exec:</label>
+                    <input type="text" id="appsScriptUrl">
+                </div>
+            </div>
+            <div class="btn-grupo">
+                <button class="btn btn-exito" onclick="guardarUrlAppsScript()">✓ Guardar URL</button>
+            </div>
+
+            <h3 style="margin: 30px 0 15px;">Alumnos Inscritos</h3>
+            <div class="btn-grupo">
+                <button class="btn btn-primario" onclick="agregarAlumno()">+ Agregar Alumno</button>
+            </div>
+
+            <div class="alumnos-grid" id="alumnosGrid"></div>
+            <div class="contador" id="contadorAlumnos"></div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Respaldo Local (opcional)</h3>
+            <div class="btn-grupo">
+                <button class="btn btn-secundario" onclick="descargarJSON()">⬇️ Descargar Respaldo (JSON)</button>
+                <button class="btn btn-secundario" onclick="cargarJSON()">⬆️ Cargar Respaldo (JSON)</button>
+                <input type="file" id="inputJSON" accept=".json" style="display: none;" onchange="procesarJSON()">
+            </div>
+        </div>
+
+        <!-- TAB: CATÁLOGO DE FRASES -->
+        <div id="frases" class="tab-content">
+            <h2 style="margin-bottom: 15px;">Catálogo de Frases por Campo Formativo</h2>
+
+            <div class="info-box">
+                💡 Estas frases son las que aparecen como opciones al llenar una ficha. Los cambios se guardan directo en la pestaña "Frases" de tu Google Sheet.
+            </div>
+
+            <div class="frases-container" id="frasesContainer"></div>
+        </div>
+    </div>
+
+    <!-- MODAL PREVISUALIZACIÓN -->
+    <div class="modal-overlay" id="modalPreview">
+        <div class="modal-caja">
+            <div class="modal-cerrar-barra">
+                <button class="btn btn-primario" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+                <button class="btn btn-secundario" onclick="cerrarPreview()">✕ Cerrar</button>
+            </div>
+            <div class="print-area" id="previewContenido"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONEXIÓN CON GOOGLE SHEETS (Apps Script)
+        // ============================================
+
+        // Esta URL NO se escribe en el código a propósito (el código es público en GitHub).
+        // Cada usuaria la pega una sola vez en la pestaña Configuración y su navegador la recuerda.
+        const URL_SHEET_HUMANA = 'https://docs.google.com/spreadsheets/d/1StBJPDMa6e4CuYjoyWH8YALx_XSl68c7t21sdCIxtis/edit?usp=sharing';
+        const URL_APPS_SCRIPT_DEFAULT = '';
+
+        function urlAppsScript() {
+            return localStorage.getItem('fichas_apps_script_url') || URL_APPS_SCRIPT_DEFAULT;
+        }
+
+        const CAMPOS = ['LENGUAJES', 'SABERES Y PENSAMIENTO CIENTÍFICO', 'ÉTICA NATURALEZA Y SOCIEDAD', 'DE LO HUMANO Y LO COMUNITARIO'];
+
+        const INDICADORES = [
+            { key: 'participacionClase', label: 'Participación en clase' },
+            { key: 'entregaTiempo', label: 'Entrega a tiempo de trabajos' },
+            { key: 'disposicion', label: 'Muestra disposición para el trabajo' },
+            { key: 'concentracion', label: 'Concentración en clase' },
+            { key: 'colabora', label: 'Colabora en las actividades' },
+            { key: 'externaDudas', label: 'Externa dudas e inquietudes' },
+            { key: 'esResponsable', label: 'Es responsable' },
+            { key: 'apoyoCasa', label: 'Lo apoyan en casa' },
+            { key: 'asistencia', label: 'Asistencia y puntualidad' },
+            { key: 'convivencia', label: 'Sana convivencia' }
+        ];
+
+        const CAMPOS_CONFIG_ESCUELA = [
+            { key: 'nombreEscuela', label: 'Nombre de la Escuela' },
+            { key: 'claveEscuela', label: 'Clave (C.C.T.)' },
+            { key: 'zonaEscolar', label: 'Zona Escolar / Sector' },
+            { key: 'direccion', label: 'Dirección' },
+            { key: 'cicloEscolar', label: 'Ciclo Escolar' },
+            { key: 'gradoGrupo', label: 'Grado y Grupo' },
+            { key: 'director', label: 'Director(a)' },
+            { key: 'maestro', label: 'Maestro(a) Responsable' }
+        ];
+
+        let config = {};
+        let alumnos = [];
+        let frases = {};
+        let fichas = {};
+        let alumnoActual = null;
+        let autoguardadoTimer = null;
+
+        let acordeonEstado = {};
+        CAMPOS.forEach((c, i) => { acordeonEstado[c] = (i === 0); });
+
+        function vacioFicha() {
+            const campos = {};
+            CAMPOS.forEach(c => { campos[c] = { fortalezas: [], oportunidades: [] }; });
+            const indicadores = {};
+            INDICADORES.forEach(i => { indicadores[i.key] = ''; });
+            return { campos, indicadores };
+        }
+
+        async function cargarDatos() {
+            if (!urlAppsScript()) {
+                marcarSync('bad', '⚠️ Falta configurar la URL de Apps Script (pestaña Configuración)');
+                const cache = cargarCacheLocal();
+                if (cache) {
+                    config = cache.config; alumnos = cache.alumnos; frases = cache.frases; fichas = cache.fichas;
+                    renderizarTodo();
+                }
+                return;
+            }
+            marcarSync('loading', 'Conectando con Sheets…');
+            try {
+                const resp = await fetch(urlAppsScript() + '?action=getAll');
+                const datos = await resp.json();
+                if (!datos.ok) throw new Error(datos.error || 'Error desconocido');
+
+                config = datos.config || {};
+                alumnos = datos.alumnos || [];
+                frases = datos.frases || {};
+                fichas = datos.fichas || {};
+
+                guardarCacheLocal();
+                marcarSync('ok', '✓ Sincronizado ' + new Date().toLocaleTimeString());
+                renderizarTodo();
+            } catch (err) {
+                console.error(err);
+                const cache = cargarCacheLocal();
+                if (cache) {
+                    config = cache.config; alumnos = cache.alumnos; frases = cache.frases; fichas = cache.fichas;
+                    marcarSync('bad', '⚠️ Sin conexión — usando copia local. ' + err.message);
+                    renderizarTodo();
+                } else {
+                    marcarSync('bad', '❌ No se pudo conectar y no hay copia local: ' + err.message);
+                }
+            }
+        }
+
+        async function postAction(action, payload) {
+            if (!urlAppsScript()) {
+                marcarSync('bad', '⚠️ Falta configurar la URL de Apps Script (pestaña Configuración)');
+                alert('Primero pega la URL de Apps Script en la pestaña Configuración y presiona "Guardar URL".');
+                throw new Error('URL de Apps Script no configurada');
+            }
+            marcarSync('loading', 'Guardando…');
+            try {
+                const resp = await fetch(urlAppsScript(), {
+                    method: 'POST',
+                    body: JSON.stringify({ action, payload })
+                });
+                const datos = await resp.json();
+                if (!datos.ok) throw new Error(datos.error || 'Error desconocido');
+
+                config = datos.config || config;
+                alumnos = datos.alumnos || alumnos;
+                frases = datos.frases || frases;
+                fichas = datos.fichas || fichas;
+                guardarCacheLocal();
+                marcarSync('ok', '✓ Guardado ' + new Date().toLocaleTimeString());
+                return datos;
+            } catch (err) {
+                console.error(err);
+                marcarSync('bad', '❌ No se guardó en Sheets: ' + err.message);
+                alert('No se pudo guardar en Google Sheets:\n' + err.message + '\n\nRevisa tu conexión o la URL de Apps Script en Configuración.');
+                throw err;
+            }
+        }
+
+        function marcarSync(estado, texto) {
+            const badge = document.getElementById('syncBadge');
+            badge.className = 'sync-badge ' + estado;
+            document.getElementById('syncTexto').textContent = texto;
+        }
+
+        function guardarCacheLocal() {
+            localStorage.setItem('fichas_cache', JSON.stringify({ config, alumnos, frases, fichas }));
+        }
+
+        function cargarCacheLocal() {
+            const raw = localStorage.getItem('fichas_cache');
+            return raw ? JSON.parse(raw) : null;
+        }
+
+        function abrirBaseDeDatos() {
+            window.open(URL_SHEET_HUMANA, '_blank');
+        }
+
+        function renderizarTodo() {
+            document.getElementById('headerSubtitulo').textContent =
+                (config.nombreEscuela || 'Escuela') + ' — ' + (config.gradoGrupo || '');
+            actualizarSelectores();
+            renderizarAlumnos();
+            renderizarConfigEscuela();
+            document.getElementById('appsScriptUrl').value = urlAppsScript();
+            renderizarFrases();
+            renderizarFichas();
+            renderizarTrabajadas();
+        }
+
+        // ============================================
+        // TABS
+        // ============================================
+
+        function cambiarTab(nombre) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(nombre).classList.add('active');
+            event.target.classList.add('active');
+
+            if (nombre === 'trabajadas') renderizarTrabajadas();
+        }
+
+        // ============================================
+        // CONFIGURACIÓN: ESCUELA
+        // ============================================
+
+        function renderizarConfigEscuela() {
+            const grid = document.getElementById('escuelaInfoGrid');
+            grid.innerHTML = CAMPOS_CONFIG_ESCUELA.map(c => `
+                <div>
+                    <label>${c.label}:</label>
+                    <input type="text" id="cfg_${c.key}" value="${escapeAttr(config[c.key] || '')}">
+                </div>
+            `).join('');
+        }
+
+        async function guardarConfigEscuela() {
+            const payload = {};
+            CAMPOS_CONFIG_ESCUELA.forEach(c => {
+                payload[c.key] = document.getElementById('cfg_' + c.key).value;
+            });
+            await postAction('guardarConfig', payload);
+            renderizarTodo();
+            alert('✓ Datos de la escuela guardados en Sheets');
+        }
+
+        function guardarUrlAppsScript() {
+            const url = document.getElementById('appsScriptUrl').value.trim();
+            if (!url) return;
+            localStorage.setItem('fichas_apps_script_url', url);
+            alert('✓ URL guardada. Sincronizando…');
+            cargarDatos();
+        }
+
+        // ============================================
+        // CONFIGURACIÓN: ALUMNOS
+        // ============================================
+
+        function renderizarAlumnos() {
+            const container = document.getElementById('alumnosGrid');
+            container.innerHTML = alumnos.map((alumno) => `
+                <div class="alumno-item">
+                    <input type="text" value="${escapeAttr(alumno)}" onchange="editarNombreAlumno('${escapeJs(alumno)}', this.value)">
+                    <button onclick="eliminarAlumno('${escapeJs(alumno)}')">✕ Eliminar</button>
+                </div>
+            `).join('');
+            document.getElementById('contadorAlumnos').textContent = `Total: ${alumnos.length} alumnos`;
+        }
+
+        async function agregarAlumno() {
+            const nombre = prompt('Nombre del alumno:');
+            if (!nombre) return;
+            await postAction('agregarAlumno', { nombre });
+            renderizarTodo();
+        }
+
+        async function editarNombreAlumno(nombreAntiguo, nombreNuevoRaw) {
+            const nombreNuevo = nombreNuevoRaw.trim();
+            if (!nombreNuevo || nombreNuevo === nombreAntiguo) { renderizarAlumnos(); return; }
+            await postAction('editarAlumno', { nombreAntiguo, nombreNuevo });
+            if (alumnoActual === nombreAntiguo) alumnoActual = nombreNuevo;
+            renderizarTodo();
+        }
+
+        async function eliminarAlumno(nombre) {
+            if (!confirm(`¿Eliminar a "${nombre}" de la lista? Su ficha guardada no se borrará.`)) return;
+            await postAction('eliminarAlumno', { nombre });
+            renderizarTodo();
+        }
+
+        // ============================================
+        // CATÁLOGO DE FRASES
+        // ============================================
+
+        function renderizarFrases() {
+            const container = document.getElementById('frasesContainer');
+            container.innerHTML = CAMPOS.map(campo => {
+                const subcategorias = frases[campo] || {};
+                return `
+                <div class="categoria-frases">
+                    <h3>${campo}</h3>
+                    ${['Logro destacado', 'Proceso', 'Acompañamiento'].map(tipo => `
+                        <div class="subcategoria">
+                            <h4>${tipo}</h4>
+                            <div class="frases-lista">
+                                ${(subcategorias[tipo] || []).map((frase) => `
+                                    <div class="frase-item">
+                                        <textarea id="txt_${idFrase(campo, tipo, frase)}">${escapeHtml(frase)}</textarea>
+                                        <div class="frase-botones">
+                                            <button class="btn-guardar-frase" onclick="guardarEdicionFrase('${escapeJs(campo)}', '${escapeJs(tipo)}', '${escapeJs(frase)}')">💾</button>
+                                            <button class="btn-borrar-frase" onclick="borrarFrase('${escapeJs(campo)}', '${escapeJs(tipo)}', '${escapeJs(frase)}')">✕</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="btn btn-primario" style="margin-top: 10px; width: 100%;" onclick="agregarFraseCatalogo('${escapeJs(campo)}', '${escapeJs(tipo)}')">+ Agregar frase</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            }).join('');
+        }
+
+        function idFrase(campo, tipo, frase) {
+            return btoa(unescape(encodeURIComponent(campo + '|' + tipo + '|' + frase))).replace(/[^a-zA-Z0-9]/g, '');
+        }
+
+        async function agregarFraseCatalogo(campo, tipo) {
+            const texto = prompt('Nueva frase para "' + campo + '" (' + tipo + '):');
+            if (!texto) return;
+            await postAction('agregarFrase', { campo, tipo, frase: texto });
+            renderizarFrases();
+        }
+
+        async function guardarEdicionFrase(campo, tipo, fraseAntigua) {
+            const textarea = document.getElementById('txt_' + idFrase(campo, tipo, fraseAntigua));
+            const fraseNueva = textarea.value.trim();
+            if (!fraseNueva || fraseNueva === fraseAntigua) return;
+            await postAction('editarFrase', { campo, tipo, fraseAntigua, fraseNueva });
+            renderizarFrases();
+        }
+
+        async function borrarFrase(campo, tipo, frase) {
+            if (!confirm('¿Eliminar esta frase del catálogo?')) return;
+            await postAction('eliminarFrase', { campo, tipo, frase });
+            renderizarFrases();
+        }
+
+        // ============================================
+        // FICHAS
+        // ============================================
+
+        function actualizarSelectores() {
+            const select = document.getElementById('selectorAlumno');
+            const valorActual = select.value;
+            select.innerHTML = '<option value="">-- Selecciona alumno --</option>' + alumnos.map((a, idx) =>
+                `<option value="${idx}">${idx + 1}. ${escapeHtml(a)}</option>`
+            ).join('');
+            if (valorActual && alumnos[valorActual] === alumnoActual) select.value = valorActual;
+        }
+
+        function cambiarAlumnoActual() {
+            const idx = document.getElementById('selectorAlumno').value;
+            if (idx === '') {
+                alumnoActual = null;
+                document.getElementById('camposFichas').innerHTML = '';
+                document.getElementById('bloqueIndicadores').innerHTML = '';
+                deshabilitarBotonesFicha();
+                return;
+            }
+            alumnoActual = alumnos[idx];
+            if (!fichas[alumnoActual]) fichas[alumnoActual] = vacioFicha();
+            renderizarFichas();
+        }
+
+        function deshabilitarBotonesFicha() {
+            document.getElementById('btnGuardarFicha').disabled = true;
+            document.getElementById('btnPrevisualizar').disabled = true;
+            document.getElementById('btnDescargarUno').disabled = true;
+        }
+
+        function renderizarFichas() {
+            if (!alumnoActual) { deshabilitarBotonesFicha(); return; }
+            if (!fichas[alumnoActual]) fichas[alumnoActual] = vacioFicha();
+
+            const ficha = fichas[alumnoActual];
+            const container = document.getElementById('camposFichas');
+
+            container.innerHTML = CAMPOS.map((campo, cidx) => {
+                const datos = ficha.campos[campo] || { fortalezas: [], oportunidades: [] };
+                const completo = datos.fortalezas.length && datos.oportunidades.length;
+                const catalogoCampo = frases[campo] || {};
+
+                return `
+                    <div class="campo-ficha">
+                        <div class="campo-titulo" onclick="toggleAcordeon('${escapeJs(campo)}')">
+                            <span>${campo} ${completo ? '✓' : ''}</span>
+                            <span>${acordeonEstado[campo] ? '▲' : '▼'}</span>
+                        </div>
+                        <div class="campo-contenido ${acordeonEstado[campo] ? 'activo' : ''}">
+                            <div class="dos-columnas">
+                                <div class="columna-frase fortalezas">
+                                    <h4>Fortalezas</h4>
+                                    <div class="frases-elegidas">
+                                        ${datos.fortalezas.map((f, i) => `
+                                            <div class="frase-elegida">
+                                                <span>${escapeHtml(f)}</span>
+                                                <button onclick="quitarFrase('${escapeJs(campo)}', 'fortalezas', ${i})">✕</button>
+                                            </div>
+                                        `).join('') || '<span style="font-size:12px;color:#999;">Sin frases seleccionadas</span>'}
+                                    </div>
+                                    <div class="opciones-frases">
+                                        ${(catalogoCampo['Logro destacado'] || []).map(f => `
+                                            <label class="opcion-check">
+                                                <input type="checkbox" ${datos.fortalezas.includes(f) ? 'checked' : ''}
+                                                    onchange="toggleFrase('${escapeJs(campo)}', 'fortalezas', '${escapeJs(f)}', this.checked)">
+                                                <span>${escapeHtml(f)}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                    <div class="frase-libre">
+                                        <input type="text" id="libre_${campo}_fortalezas" placeholder="Escribir una frase propia…">
+                                        <button class="btn btn-secundario btn-chico" onclick="agregarFraseLibre('${escapeJs(campo)}', 'fortalezas')">+ Añadir</button>
+                                    </div>
+                                </div>
+
+                                <div class="columna-frase oportunidad">
+                                    <h4>Áreas de Oportunidad</h4>
+                                    <div class="frases-elegidas">
+                                        ${datos.oportunidades.map((f, i) => `
+                                            <div class="frase-elegida">
+                                                <span>${escapeHtml(f)}</span>
+                                                <button onclick="quitarFrase('${escapeJs(campo)}', 'oportunidades', ${i})">✕</button>
+                                            </div>
+                                        `).join('') || '<span style="font-size:12px;color:#999;">Sin frases seleccionadas</span>'}
+                                    </div>
+                                    <div class="opciones-frases">
+                                        ${['Proceso', 'Acompañamiento'].map(tipo => (catalogoCampo[tipo] || []).map(f => `
+                                            <label class="opcion-check ${tipo === 'Proceso' ? 'tipo-proceso' : 'tipo-acompanamiento'}">
+                                                <input type="checkbox" ${datos.oportunidades.includes(f) ? 'checked' : ''}
+                                                    onchange="toggleFrase('${escapeJs(campo)}', 'oportunidades', '${escapeJs(f)}', this.checked)">
+                                                <span>${escapeHtml(f)} <em style="color:#999;">(${tipo})</em></span>
+                                            </label>
+                                        `).join('')).join('')}
+                                    </div>
+                                    <div class="frase-libre">
+                                        <input type="text" id="libre_${campo}_oportunidades" placeholder="Escribir una frase propia…">
+                                        <button class="btn btn-secundario btn-chico" onclick="agregarFraseLibre('${escapeJs(campo)}', 'oportunidades')">+ Añadir</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderizarIndicadores();
+
+            const completa = CAMPOS.every(c => ficha.campos[c].fortalezas.length && ficha.campos[c].oportunidades.length);
+            const mensaje = document.getElementById('mensajeProgreso');
+            if (completa) {
+                mensaje.textContent = `✓ Los 4 campos formativos están completos para ${alumnoActual}`;
+                mensaje.style.display = 'block';
+            } else {
+                mensaje.style.display = 'none';
+            }
+
+            document.getElementById('btnGuardarFicha').disabled = false;
+            document.getElementById('btnPrevisualizar').disabled = false;
+            document.getElementById('btnDescargarUno').disabled = !completa;
+            actualizarBotonDescargarTodos();
+        }
+
+        function renderizarIndicadores() {
+            const ficha = fichas[alumnoActual];
+            const mitad = Math.ceil(INDICADORES.length / 2);
+            const izquierda = INDICADORES.slice(0, mitad);
+            const derecha = INDICADORES.slice(mitad);
+
+            const filaHtml = (ind) => `
+                <div class="indicador-fila">
+                    <span>${ind.label}</span>
+                    <div class="sfn-grupo">
+                        ${['S', 'F', 'N'].map(letra => `
+                            <button type="button" class="sfn-btn ${ficha.indicadores[ind.key] === letra ? 'activo-' + letra : ''}"
+                                onclick="setIndicador('${ind.key}', '${letra}')">${letra}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('bloqueIndicadores').innerHTML = `
+                <div class="campo-ficha">
+                    <div class="campo-titulo" onclick="this.nextElementSibling.classList.toggle('activo')">
+                        <span>Aspectos para Tomar en Cuenta (S: Siempre · F: Frecuentemente · N: Nunca)</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="campo-contenido activo">
+                        <div class="indicadores-grid">
+                            <div>${izquierda.map(filaHtml).join('')}</div>
+                            <div>${derecha.map(filaHtml).join('')}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleAcordeon(campo) {
+            acordeonEstado[campo] = !acordeonEstado[campo];
+            renderizarFichas();
+        }
+
+        function setIndicador(key, letra) {
+            const ficha = fichas[alumnoActual];
+            ficha.indicadores[key] = ficha.indicadores[key] === letra ? '' : letra;
+            renderizarIndicadores();
+            programarAutoguardado();
+        }
+
+        function toggleFrase(campo, lado, frase, marcado) {
+            const lista = fichas[alumnoActual].campos[campo][lado];
+            const idx = lista.indexOf(frase);
+            if (marcado && idx === -1) lista.push(frase);
+            if (!marcado && idx !== -1) lista.splice(idx, 1);
+            renderizarFichas();
+            programarAutoguardado();
+        }
+
+        function quitarFrase(campo, lado, indice) {
+            fichas[alumnoActual].campos[campo][lado].splice(indice, 1);
+            renderizarFichas();
+            programarAutoguardado();
+        }
+
+        async function agregarFraseLibre(campo, lado) {
+            const input = document.getElementById(`libre_${campo}_${lado}`);
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            fichas[alumnoActual].campos[campo][lado].push(texto);
+            input.value = '';
+
+            const tipo = lado === 'fortalezas' ? 'Logro destacado' : 'Proceso';
+            const yaEnCatalogo = frases[campo] && frases[campo][tipo] && frases[campo][tipo].includes(texto);
+            if (!yaEnCatalogo) {
+                try { await postAction('agregarFrase', { campo, tipo, frase: texto }); } catch (e) { /* ya se avisó en postAction */ }
+            }
+
+            renderizarFichas();
+            programarAutoguardado();
+        }
+
+        function programarAutoguardado() {
+            if (!alumnoActual) return;
+            clearTimeout(autoguardadoTimer);
+            autoguardadoTimer = setTimeout(() => {
+                postAction('guardarFicha', {
+                    alumno: alumnoActual,
+                    campos: fichas[alumnoActual].campos,
+                    indicadores: fichas[alumnoActual].indicadores
+                }).then(() => renderizarTrabajadas()).catch(() => { /* ya se avisó en postAction */ });
+            }, 900);
+        }
+
+        async function guardarFichaActual() {
+            if (!alumnoActual) return;
+            clearTimeout(autoguardadoTimer);
+            await postAction('guardarFicha', { alumno: alumnoActual, campos: fichas[alumnoActual].campos, indicadores: fichas[alumnoActual].indicadores });
+            renderizarTrabajadas();
+            alert('✓ Ficha de ' + alumnoActual + ' guardada en Sheets');
+        }
+
+        function actualizarBotonDescargarTodos() {
+            const hayCompletas = Object.values(fichas).some(f => CAMPOS.every(c => f.campos[c]?.fortalezas.length && f.campos[c]?.oportunidades.length));
+            document.getElementById('btnDescargarTodos').disabled = !hayCompletas;
+        }
+
+        // ============================================
+        // TRABAJADAS
+        // ============================================
+
+        function estadoCampo(datos) {
+            if (!datos) return 'vacio';
+            if (datos.fortalezas.length && datos.oportunidades.length) return 'completo';
+            if (datos.fortalezas.length || datos.oportunidades.length) return 'parcial';
+            return 'vacio';
+        }
+
+        function iconoEstado(estado) {
+            if (estado === 'completo') return '<span class="estado-punto estado-completo">●</span>';
+            if (estado === 'parcial') return '<span class="estado-punto estado-parcial">◐</span>';
+            return '<span class="estado-punto estado-vacio">○</span>';
+        }
+
+        function renderizarTrabajadas() {
+            let completas = 0, parciales = 0, sinIniciar = 0;
+
+            const filas = alumnos.map(alumno => {
+                const ficha = fichas[alumno] || vacioFicha();
+                const estados = CAMPOS.map(c => estadoCampo(ficha.campos[c]));
+                const indicadoresLlenos = INDICADORES.filter(i => ficha.indicadores[i.key]).length;
+
+                if (estados.every(e => e === 'completo')) completas++;
+                else if (estados.some(e => e !== 'vacio')) parciales++;
+                else sinIniciar++;
+
+                return `
+                    <tr>
+                        <td class="nombre">${escapeHtml(alumno)}</td>
+                        ${estados.map(e => `<td>${iconoEstado(e)}</td>`).join('')}
+                        <td>${indicadoresLlenos}/${INDICADORES.length}</td>
+                        <td>
+                            <button class="btn btn-primario btn-chico" onclick="irAFicha('${escapeJs(alumno)}')">Editar</button>
+                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-secundario btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">Descargar</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('tablaTrabajadas').innerHTML = `
+                <tr>
+                    <th>Alumno</th>
+                    ${CAMPOS.map(c => `<th>${c}</th>`).join('')}
+                    <th>Indicadores</th>
+                    <th>Acciones</th>
+                </tr>
+                ${filas}
+            `;
+
+            document.getElementById('statsFila').innerHTML = `
+                <div class="stat-card"><div class="num">${alumnos.length}</div><div class="lbl">Alumnos</div></div>
+                <div class="stat-card"><div class="num">${completas}</div><div class="lbl">Fichas completas</div></div>
+                <div class="stat-card"><div class="num">${parciales}</div><div class="lbl">En proceso</div></div>
+                <div class="stat-card"><div class="num">${sinIniciar}</div><div class="lbl">Sin iniciar</div></div>
+                <div class="stat-card"><div class="num">${alumnos.length ? Math.round(completas / alumnos.length * 100) : 0}%</div><div class="lbl">Progreso</div></div>
+            `;
+
+            actualizarBotonDescargarTodos();
+        }
+
+        function irAFicha(alumno) {
+            alumnoActual = alumno;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('fichas').classList.add('active');
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            const idx = alumnos.indexOf(alumno);
+            document.getElementById('selectorAlumno').value = idx;
+            if (!fichas[alumnoActual]) fichas[alumnoActual] = vacioFicha();
+            renderizarFichas();
+        }
+
+        // ============================================
+        // PREVISUALIZACIÓN
+        // ============================================
+
+        function previsualizarFicha() {
+            if (!alumnoActual) return;
+            const ficha = fichas[alumnoActual];
+
+            const filasIndicadores = () => {
+                const mitad = Math.ceil(INDICADORES.length / 2);
+                const izq = INDICADORES.slice(0, mitad);
+                const der = INDICADORES.slice(mitad);
+                let filas = '';
+                for (let i = 0; i < mitad; i++) {
+                    const a = izq[i], b = der[i];
+                    filas += `<tr>
+                        <td class="ind-nombre">${a ? a.label : ''}</td>
+                        ${a ? ['S', 'F', 'N'].map(l => `<td>${ficha.indicadores[a.key] === l ? 'X' : ''}</td>`).join('') : '<td></td><td></td><td></td>'}
+                        <td class="ind-nombre">${b ? b.label : ''}</td>
+                        ${b ? ['S', 'F', 'N'].map(l => `<td>${ficha.indicadores[b.key] === l ? 'X' : ''}</td>`).join('') : '<td></td><td></td><td></td>'}
+                    </tr>`;
+                }
+                return filas;
+            };
+
+            document.getElementById('previewContenido').innerHTML = `
+                <div class="ficha-preview">
+                    <div class="enc-escuela">
+                        ${escapeHtml(config.nombreEscuela || '')}<br>
+                        ${escapeHtml(config.claveEscuela || '')}<br>
+                        ${escapeHtml(config.zonaEscolar || '')}<br>
+                        ${escapeHtml(config.direccion || '')}<br>
+                        CICLO ESCOLAR: ${escapeHtml(config.cicloEscolar || '')}
+                    </div>
+                    <div class="titulo-ficha">FICHA DESCRIPTIVA INDIVIDUAL</div>
+                    <div class="nombre-alumno">NOMBRE DEL ALUMNO: ${escapeHtml(alumnoActual)} &nbsp;&nbsp;|&nbsp;&nbsp; GRUPO: ${escapeHtml(config.gradoGrupo || '')}</div>
+
+                    <table class="tabla-preview">
+                        <tr><th>Campo Formativo</th><th>Fortalezas</th><th>Áreas de Oportunidad</th></tr>
+                        ${CAMPOS.map(campo => `
+                            <tr>
+                                <td class="campo-nombre">${campo}</td>
+                                <td class="frase-linea">${escapeHtml(ficha.campos[campo].fortalezas.join('\n'))}</td>
+                                <td class="frase-linea">${escapeHtml(ficha.campos[campo].oportunidades.join('\n'))}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+
+                    <div style="font-weight:700; margin-bottom:8px;">ASPECTOS PARA TOMAR EN CUENTA</div>
+                    <table class="tabla-indicadores-preview">
+                        <tr><th>Indicador</th><th>S</th><th>F</th><th>N</th><th>Indicador</th><th>S</th><th>F</th><th>N</th></tr>
+                        ${filasIndicadores()}
+                    </table>
+                    <p style="font-size:11px; font-style:italic; margin-top:6px;">(S: SIEMPRE &nbsp; F: FRECUENTEMENTE &nbsp; N: NUNCA)</p>
+
+                    <div class="firmas-preview">
+                        <div>Vo. Bo. DIRECTOR<br><br>_____________________________<br>${escapeHtml(config.director || '')}</div>
+                        <div>MAESTRO RESPONSABLE<br><br>_____________________________<br>${escapeHtml(config.maestro || '')}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalPreview').classList.add('activo');
+        }
+
+        function cerrarPreview() {
+            document.getElementById('modalPreview').classList.remove('activo');
+        }
+
+        // ============================================
+        // GENERAR WORD
+        // ============================================
+
+        async function descargarWordActual() {
+            if (!alumnoActual) return;
+            await descargarWordDe(alumnoActual);
+        }
+
+        async function descargarWordDe(nombre) {
+            try {
+                if (typeof docx === 'undefined') throw new Error('La librería docx.js no cargó (revisa tu conexión a internet y recarga la página).');
+                const ficha = fichas[nombre];
+                const doc = crearDocumento(config, nombre, ficha);
+                const blob = await docx.Packer.toBlob(doc);
+                descargarArchivo(blob, `${nombre.replace(/\s+/g, '_')}_FICHA.docx`);
+            } catch (err) {
+                console.error(err);
+                alert('❌ No se pudo generar el Word de ' + nombre + ':\n' + err.message);
+            }
+        }
+
+        async function descargarTodosPalabra() {
+            const completas = alumnos.filter(a => {
+                const f = fichas[a];
+                return f && CAMPOS.every(c => f.campos[c]?.fortalezas.length && f.campos[c]?.oportunidades.length);
+            });
+
+            for (const nombre of completas) {
+                await descargarWordDe(nombre);
+                await new Promise(r => setTimeout(r, 400));
+            }
+        }
+
+        function crearDocumento(config, nombreAlumno, ficha) {
+            const indicadoresParrafos = (ind) => new docx.Paragraph({
+                text: ficha.indicadores[ind.key] === 'S' ? 'X' : '',
+                alignment: docx.AlignmentType.CENTER
+            });
+
+            const filasIndicadores = [];
+            const mitad = Math.ceil(INDICADORES.length / 2);
+            for (let i = 0; i < mitad; i++) {
+                const a = INDICADORES[i];
+                const b = INDICADORES[mitad + i];
+                filasIndicadores.push(new docx.TableRow({
+                    children: [
+                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: a ? a.label : '', size: 18 })] }),
+                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: a && ficha.indicadores[a.key] === l ? 'X' : '', alignment: docx.AlignmentType.CENTER, bold: true, size: 18 })] })),
+                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: b ? b.label : '', size: 18 })] }),
+                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: b && ficha.indicadores[b.key] === l ? 'X' : '', alignment: docx.AlignmentType.CENTER, bold: true, size: 18 })] }))
+                    ]
+                }));
+            }
+
+            return new docx.Document({
+                sections: [{
+                    children: [
+                        new docx.Paragraph({ text: config.nombreEscuela || '', alignment: docx.AlignmentType.CENTER, bold: true, size: 24 }),
+                        new docx.Paragraph({ text: config.claveEscuela || '', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                        new docx.Paragraph({ text: config.zonaEscolar || '', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                        new docx.Paragraph({ text: config.direccion || '', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                        new docx.Paragraph({ text: 'CICLO ESCOLAR: ' + (config.cicloEscolar || ''), alignment: docx.AlignmentType.CENTER, size: 20, spacing: { after: 300 } }),
+                        new docx.Paragraph({ text: 'FICHA DESCRIPTIVA INDIVIDUAL', alignment: docx.AlignmentType.CENTER, bold: true, size: 26, spacing: { after: 300 } }),
+                        new docx.Paragraph({ text: `NOMBRE DEL ALUMNO: ${nombreAlumno}`, bold: true, size: 24 }),
+                        new docx.Paragraph({ text: `GRUPO: ${config.gradoGrupo || ''}`, bold: true, size: 20, spacing: { after: 300 } }),
+
+                        new docx.Table({
+                            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+                            rows: CAMPOS.map(campo => new docx.TableRow({
+                                children: [
+                                    new docx.TableCell({
+                                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                                        children: [new docx.Paragraph({ text: campo, bold: true, size: 20 })],
+                                        shading: { fill: 'D9E8F5' }
+                                    }),
+                                    new docx.TableCell({
+                                        width: { size: 39, type: docx.WidthType.PERCENTAGE },
+                                        children: (ficha.campos[campo].fortalezas.length ? ficha.campos[campo].fortalezas : ['']).map(txt =>
+                                            new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
+                                        )
+                                    }),
+                                    new docx.TableCell({
+                                        width: { size: 39, type: docx.WidthType.PERCENTAGE },
+                                        children: (ficha.campos[campo].oportunidades.length ? ficha.campos[campo].oportunidades : ['']).map(txt =>
+                                            new docx.Paragraph({ text: txt, size: 19, spacing: { after: 60 } })
+                                        )
+                                    })
+                                ]
+                            }))
+                        }),
+
+                        new docx.Paragraph({ text: '' }),
+                        new docx.Paragraph({ text: 'ASPECTOS PARA TOMAR EN CUENTA', bold: true, size: 24, spacing: { after: 200 } }),
+
+                        new docx.Table({
+                            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+                            rows: [
+                                new docx.TableRow({
+                                    children: [
+                                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: 'INDICADOR', bold: true, size: 18 })], shading: { fill: 'E8E8E8' } }),
+                                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: l, bold: true, alignment: docx.AlignmentType.CENTER, size: 18 })], shading: { fill: 'E8E8E8' } })),
+                                        new docx.TableCell({ width: { size: 20, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: 'INDICADOR', bold: true, size: 18 })], shading: { fill: 'E8E8E8' } }),
+                                        ...['S', 'F', 'N'].map(l => new docx.TableCell({ width: { size: 10, type: docx.WidthType.PERCENTAGE }, children: [new docx.Paragraph({ text: l, bold: true, alignment: docx.AlignmentType.CENTER, size: 18 })], shading: { fill: 'E8E8E8' } }))
+                                    ]
+                                }),
+                                ...filasIndicadores
+                            ]
+                        }),
+
+                        new docx.Paragraph({ text: '(S: SIEMPRE   F: FRECUENTEMENTE   N: NUNCA)', italic: true, size: 18, spacing: { before: 200, after: 500 } }),
+
+                        new docx.Table({
+                            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+                            borders: { top: { style: 'none' }, bottom: { style: 'none' }, left: { style: 'none' }, right: { style: 'none' }, insideHorizontal: { style: 'none' }, insideVertical: { style: 'none' } },
+                            rows: [new docx.TableRow({
+                                children: [
+                                    new docx.TableCell({ width: { size: 50, type: docx.WidthType.PERCENTAGE }, children: [
+                                        new docx.Paragraph({ text: 'Vo. Bo   DIRECTOR', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                                        new docx.Paragraph({ text: '' }),
+                                        new docx.Paragraph({ text: '_____________________________', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                                        new docx.Paragraph({ text: config.director || '', alignment: docx.AlignmentType.CENTER, size: 18 })
+                                    ] }),
+                                    new docx.TableCell({ width: { size: 50, type: docx.WidthType.PERCENTAGE }, children: [
+                                        new docx.Paragraph({ text: 'MAESTRO RESPONSABLE', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                                        new docx.Paragraph({ text: '' }),
+                                        new docx.Paragraph({ text: '_____________________________', alignment: docx.AlignmentType.CENTER, size: 20 }),
+                                        new docx.Paragraph({ text: config.maestro || '', alignment: docx.AlignmentType.CENTER, size: 18 })
+                                    ] })
+                                ]
+                            })]
+                        })
+                    ]
+                }]
+            });
+        }
+
+        function descargarArchivo(blob, nombre) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = nombre;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================
+        // RESPALDO LOCAL JSON
+        // ============================================
+
+        function descargarJSON() {
+            const datos = { config, alumnos, frases, fichas };
+            const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'fichas_descriptivas_respaldo.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function cargarJSON() {
+            document.getElementById('inputJSON').click();
+        }
+
+        function procesarJSON() {
+            const file = document.getElementById('inputJSON').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const datos = JSON.parse(e.target.result);
+                    config = datos.config || config;
+                    alumnos = datos.alumnos || alumnos;
+                    frases = datos.frases || frases;
+                    fichas = datos.fichas || fichas;
+                    guardarCacheLocal();
+                    renderizarTodo();
+                    alert('✓ Respaldo cargado localmente. Esto NO se ha guardado aún en Sheets.');
+                } catch (error) {
+                    alert('❌ Error al cargar el archivo JSON: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================
+        // UTILIDADES
+        // ============================================
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function escapeAttr(str) { return escapeHtml(str); }
+
+        function escapeJs(str) {
+            return String(str || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+
+        window.onload = () => {
+            const cache = cargarCacheLocal();
+            if (cache) {
+                config = cache.config; alumnos = cache.alumnos; frases = cache.frases; fichas = cache.fichas;
+                renderizarTodo();
+            }
+            cargarDatos();
+        };
+    </script>
+</body>
+</html>
