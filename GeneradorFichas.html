@@ -824,7 +824,11 @@
                 config = datos.config || config;
                 alumnos = datos.alumnos || alumnos;
                 frases = datos.frases || frases;
-                fichas = datos.fichas || fichas;
+                // "fichas" NO se reemplaza aquí a propósito: si el autoguardado tarda unos
+                // segundos en responder, la respuesta puede ser más vieja que el clic que el
+                // usuario ya dio después de guardar, y pisaría selecciones recién hechas
+                // (frases que "reaparecen" solas). La copia local siempre manda; solo
+                // cargarDatos() (sincronización explícita) reemplaza "fichas".
                 guardarCacheLocal();
                 marcarSync('ok', '✓ Guardado ' + new Date().toLocaleTimeString());
                 return datos;
