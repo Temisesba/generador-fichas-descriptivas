@@ -193,8 +193,12 @@
         .btn-editar:hover:not(:disabled) { background: #f43f5e; }
         .btn-ver { background: #0EA5E9; color: white; }
         .btn-ver:hover:not(:disabled) { background: #0284c7; }
-        .btn-descargar-word { background: #22C55E; color: white; border-radius: 9px; }
+        .btn-descargar-word {
+            background: #22C55E; color: white; border-radius: 9px;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
         .btn-descargar-word:hover:not(:disabled) { background: #16a34a; }
+        .btn-accion-cuadro svg { display: block; }
 
         /* CATÁLOGO DE FRASES */
         .frases-container { display: grid; gap: 20px; }
@@ -732,6 +736,11 @@
         }
 
         const CAMPOS = ['LENGUAJES', 'SABERES Y PENSAMIENTO CIENTÍFICO', 'ÉTICA NATURALEZA Y SOCIEDAD', 'DE LO HUMANO Y LO COMUNITARIO'];
+
+        // Íconos blancos rellenos (Trabajadas) estilo Material, iguales en cualquier dispositivo
+        const ICONO_LAPIZ = `<svg viewBox="0 0 24 24" width="17" height="17" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.83-1.82z"/></svg>`;
+        const ICONO_OJO = `<svg viewBox="0 0 24 24" width="19" height="19" fill="white" fill-rule="evenodd"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
+        const ICONO_WORD = `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="white"/><path d="M15 2v5h5" fill="none" stroke="#22C55E" stroke-width="1.4" stroke-linejoin="round"/><text x="12" y="17.5" font-size="7.5" font-weight="700" text-anchor="middle" fill="#22C55E" font-family="Arial, sans-serif">W</text></svg>`;
 
         const INDICADORES = [
             { key: 'participacionClase', label: 'Participación en clase' },
@@ -1311,9 +1320,9 @@
                         ${estados.map(e => `<td>${iconoEstado(e)}</td>`).join('')}
                         <td>${indicadoresLlenos}/${INDICADORES.length}</td>
                         <td>
-                            <button class="btn btn-accion-cuadro btn-editar" onclick="irAFicha('${escapeJs(alumno)}')" title="Editar">✏️</button>
-                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-accion-cuadro btn-ver" onclick="previsualizarFichaDe('${escapeJs(alumno)}')" title="Previsualizar">👁️</button>` : ''}
-                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-descargar-word btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">📄 Descargar Word</button>` : ''}
+                            <button class="btn btn-accion-cuadro btn-editar" onclick="irAFicha('${escapeJs(alumno)}')" title="Editar">${ICONO_LAPIZ}</button>
+                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-accion-cuadro btn-ver" onclick="previsualizarFichaDe('${escapeJs(alumno)}')" title="Previsualizar">${ICONO_OJO}</button>` : ''}
+                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-descargar-word btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">${ICONO_WORD} Descargar Word</button>` : ''}
                         </td>
                     </tr>
                 `;
