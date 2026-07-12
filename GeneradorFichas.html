@@ -178,6 +178,24 @@
         .btn-chico { padding: 6px 10px; font-size: 12px; }
         .btn-icono { padding: 6px 12px; font-size: 14px; line-height: 1; }
 
+        /* Botones de acción de la tabla Trabajadas */
+        .btn-accion-cuadro {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            font-size: 16px;
+        }
+        .btn-editar { background: #FB7185; color: white; }
+        .btn-editar:hover:not(:disabled) { background: #f43f5e; }
+        .btn-ver { background: #0EA5E9; color: white; }
+        .btn-ver:hover:not(:disabled) { background: #0284c7; }
+        .btn-descargar-word { background: #22C55E; color: white; border-radius: 9px; }
+        .btn-descargar-word:hover:not(:disabled) { background: #16a34a; }
+
         /* CATÁLOGO DE FRASES */
         .frases-container { display: grid; gap: 20px; }
 
@@ -1293,9 +1311,9 @@
                         ${estados.map(e => `<td>${iconoEstado(e)}</td>`).join('')}
                         <td>${indicadoresLlenos}/${INDICADORES.length}</td>
                         <td>
-                            <button class="btn btn-primario btn-chico btn-icono" onclick="irAFicha('${escapeJs(alumno)}')" title="Editar">✏️</button>
-                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-info btn-chico btn-icono" onclick="previsualizarFichaDe('${escapeJs(alumno)}')" title="Previsualizar">👁️</button>` : ''}
-                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-secundario btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">Descargar Word</button>` : ''}
+                            <button class="btn btn-accion-cuadro btn-editar" onclick="irAFicha('${escapeJs(alumno)}')" title="Editar">✏️</button>
+                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-accion-cuadro btn-ver" onclick="previsualizarFichaDe('${escapeJs(alumno)}')" title="Previsualizar">👁️</button>` : ''}
+                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-descargar-word btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">📄 Descargar Word</button>` : ''}
                         </td>
                     </tr>
                 `;
