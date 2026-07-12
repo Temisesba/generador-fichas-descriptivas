@@ -1291,7 +1291,7 @@
                         <td>${indicadoresLlenos}/${INDICADORES.length}</td>
                         <td>
                             <button class="btn btn-primario btn-chico" onclick="irAFicha('${escapeJs(alumno)}')">Editar</button>
-                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-morado btn-chico" onclick="previsualizarFichaDe('${escapeJs(alumno)}')">Previsualizar</button>` : ''}
+                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-morado btn-chico" onclick="previsualizarFichaDe('${escapeJs(alumno)}')" title="Previsualizar">👁️</button>` : ''}
                             ${estados.every(e => e === 'completo') ? `<button class="btn btn-secundario btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">Descargar Word</button>` : ''}
                         </td>
                     </tr>
