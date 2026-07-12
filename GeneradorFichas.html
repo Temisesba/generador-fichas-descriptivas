@@ -1291,7 +1291,8 @@
                         <td>${indicadoresLlenos}/${INDICADORES.length}</td>
                         <td>
                             <button class="btn btn-primario btn-chico" onclick="irAFicha('${escapeJs(alumno)}')">Editar</button>
-                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-secundario btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">Descargar</button>` : ''}
+                            ${estados.some(e => e !== 'vacio') ? `<button class="btn btn-morado btn-chico" onclick="previsualizarFichaDe('${escapeJs(alumno)}')">Previsualizar</button>` : ''}
+                            ${estados.every(e => e === 'completo') ? `<button class="btn btn-secundario btn-chico" onclick="descargarWordDe('${escapeJs(alumno)}')">Descargar Word</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -1335,8 +1336,12 @@
         // ============================================
 
         function previsualizarFicha() {
-            if (!alumnoActual) return;
-            const ficha = fichas[alumnoActual];
+            previsualizarFichaDe(alumnoActual);
+        }
+
+        function previsualizarFichaDe(nombre) {
+            if (!nombre) return;
+            const ficha = fichas[nombre] || vacioFicha();
 
             const filasIndicadores = () => {
                 const mitad = Math.ceil(INDICADORES.length / 2);
@@ -1365,7 +1370,7 @@
                         CICLO ESCOLAR: ${escapeHtml(config.cicloEscolar || '')}
                     </div>
                     <div class="titulo-ficha">FICHA DESCRIPTIVA INDIVIDUAL</div>
-                    <div class="nombre-alumno">NOMBRE DEL ALUMNO: <u>${escapeHtml(alumnoActual)}</u></div>
+                    <div class="nombre-alumno">NOMBRE DEL ALUMNO: <u>${escapeHtml(nombre)}</u></div>
 
                     <table class="tabla-preview">
                         <tr><th>Campo Formativo</th><th>Fortalezas</th><th>Areas de Oportunidad</th></tr>
